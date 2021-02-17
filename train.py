@@ -6,16 +6,18 @@ import numpy as np
 import joblib
 import pickle
 import pandas as pd
-from azureml.core import Datastore, Dataset
+from azureml.core import  Dataset
 from azureml.core import Run
 from sklearn.model_selection import train_test_split
 from keras.models import Sequential
 from keras.layers import Dense,Flatten
-from keras.callbacks import ModelCheckpoint
 from keras.callbacks import EarlyStopping
 from keras.layers import Dropout
 from keras.constraints import maxnorm
 from keras.optimizers import Adam
+from keras.callbacks import Callback
+import matplotlib.pyplot as plt
+import tensorflow as tf
 
 
 maxlen=32
@@ -41,8 +43,12 @@ args = parser.parse_args()
 def getmodel():
     model = Sequential()
     model.add(Flatten())
-    model.add(Dense(args.first_layer_neurons,input_dim=23*maxlen,activation='sigmoid',
+    if(args.weight_constraint!=0):
+        model.add(Dense(args.first_layer_neurons,input_dim=23*maxlen,activation='sigmoid',
                     kernel_constraint=maxnorm(args.weight_constraint)))
+    else:
+        model.add(Dense(args.first_layer_neurons,input_dim=23*maxlen,activation='sigmoid'))
+        
     model.add(Dense(args.second_layer_neurons, activation='sigmoid'))
     if(args.dropout1!=0):
         model.add(Dropout(args.dropout1))
@@ -87,7 +93,7 @@ X,Y=load_data()
 i=args.test_size
 j=1.0-i
 X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=i, random_state=1,shuffle=True)
-X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=(i/i+j), random_state=1,shuffle=True)
+X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=(i/j), random_state=1,shuffle=True)
 
 model=getmodel()
 
